@@ -31,3 +31,26 @@ WHERE LOWER(t.tax_string) LIKE '%wheat%'
    OR LOWER(t.tax_string) LIKE '%triticum%'
 ORDER BY r.length DESC
 LIMIT 1;
+/*
+  C. Return page 9 (rows 121--135) of families whose maximum associated
+  sequence length is greater than 1,000,000 nucleotides.
+
+  full_region connects an Rfam family to an rfamseq sequence. Grouping by
+  family ensures that MAX() is calculated once per family before pagination.
+  MySQL uses a zero-based offset: (page - 1) * page_size = 8 * 15 = 120.
+*/
+SELECT
+    f.rfam_acc AS family_accession,
+    f.rfam_id AS family_name,
+    MAX(r.length) AS maximum_dna_sequence_length
+FROM family AS f
+JOIN full_region AS fr
+    ON fr.rfam_acc = f.rfam_acc
+JOIN rfamseq AS r
+    ON r.rfamseq_acc = fr.rfamseq_acc
+GROUP BY
+    f.rfam_acc,
+    f.rfam_id
+HAVING MAX(r.length) > 1000000
+ORDER BY maximum_dna_sequence_length DESC, family_accession ASC
+LIMIT 120, 15;
